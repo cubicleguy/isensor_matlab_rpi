@@ -1,12 +1,28 @@
-% Disclaimer:
-% --------------
-% THE SOFTWARE IS RELEASED INTO THE PUBLIC DOMAIN.
-% THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
-% INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, NONINFRINGEMENT,
-% SECURITY, SATISFACTORY QUALITY, AND FITNESS FOR A PARTICULAR PURPOSE.
-% IN NO EVENT SHALL EPSON BE LIABLE FOR ANY LOSS, DAMAGE OR CLAIM, ARISING FROM OR
-% IN CONNECTION WITH THE SOFTWARE OR THE USE OF THE SOFTWARE.
-%
+% This is free and unencumbered software released into the public domain.
+
+% Anyone is free to copy, modify, publish, use, compile, sell, or
+% distribute this software, either in source code form or as a compiled
+% binary, for any purpose, commercial or non-commercial, and by any
+% means.
+
+% In jurisdictions that recognize copyright laws, the author or authors
+% of this software dedicate any and all copyright interest in the
+% software to the public domain. We make this dedication for the benefit
+% of the public at large and to the detriment of our heirs and
+% successors. We intend this dedication to be an overt act of
+% relinquishment in perpetuity of all present and future rights to this
+% software under copyright law.
+
+% THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+% EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+% MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+% IN NO EVENT SHALL THE AUTHORS BE LIABLE FOR ANY CLAIM, DAMAGES OR
+% OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
+% ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+% OTHER DEALINGS IN THE SOFTWARE.
+
+% For more information, please refer to <https://unlicense.org>
+
 % Epson Device RPI handle class represents basic RPI-SPI object
 % with properties and methods to communicate with the device connected
 % to Raspberry Pi SPI interface
@@ -15,13 +31,13 @@ classdef EpsonDeviceRpi < handle
 
     properties
         Ndflag (1,1) {mustBeInteger, ... % Enable NDFLAG field in burst sample
-            mustBeNonnegative, mustBeLessThan(Ndflag, 2)} = 1;
+            mustBeNonnegative, mustBeLessThan(Ndflag, 2)};
         TempC (1,1) {mustBeInteger, ... % TempC field 0=Disable, 1=Enable 16-bit , 2=Enable 32
-            mustBeNonnegative, mustBeLessThan(TempC, 3)} = 1;
-        Counter (1,1) {mustBeInteger, ... % Enable COUNT field in burst sample
-            mustBeNonnegative, mustBeLessThan(Counter, 2)} = 1;
-        Chksm16 (1,1) {mustBeInteger, ... % Enable CHKSM field in burst sample
-            mustBeNonnegative, mustBeLessThan(Chksm16, 2)} = 1;
+            mustBeNonnegative, mustBeLessThan(TempC, 3)};
+        Counter (1,1) {mustBeInteger, ... % Enable 16-bit COUNT field in burst sample
+            mustBeNonnegative, mustBeLessThan(Counter, 2)};
+        Chksm16 (1,1) {mustBeInteger, ... % Enable 16-bit CHKSM field in burst sample
+            mustBeNonnegative, mustBeLessThan(Chksm16, 2)};
     end
 
     properties(GetAccess = 'public' , SetAccess = 'protected')
@@ -40,6 +56,10 @@ classdef EpsonDeviceRpi < handle
                 17 18 22 23 24 25 27])} = 24; % RPI input pin connected to device DRDY
         RpiSpiSpeedHz (1,1) uint32 {mustBeInteger, ... % RPI SPI clock speed in Hz
             mustBeNonnegative, mustBeLessThan(RpiSpiSpeedHz, 1000001)} = 1000000;
+        ProdId (1,8) char = 'UNKNOWN '; % Detected Product ID
+        Version (1,:) char = '255.255'; % Detected Firmware Version
+        SerialId (1,8) char = '01234567'; % Detected Serial ID
+
         Sensor; % handle to Sensor SPI object
         rpi; % handle to Raspberry Pi object
     end
@@ -78,8 +98,8 @@ classdef EpsonDeviceRpi < handle
         TSTALL = 20e-6;
         TSTALL1 = 45e-6;
         RESET_ACTIVE = 100e-3;
-        RESET_DELAY = 800e-3;
-        GOTO_CONFIG_DELAY = 100e-3;
+        RESET_DELAY = 1;
+        GOTO_CONFIG_DELAY = 200e-3;
         NOTREADY_DELAY = 100e-3;
     end
 
@@ -96,6 +116,8 @@ classdef EpsonDeviceRpi < handle
             if exist('pin_drdy', 'var')
                 obj.RpiPinDrdy = pin_drdy;
             end
+            % Specify parameters as needed raspi(ipaddress,username,password)
+            % https://www.mathworks.com/help/supportpkg/raspberrypiio/ref/raspi.html?s_tid=doc_ta
             obj.rpi = raspi();
             obj.Sensor = obj.rpi.spidev(obj.CS, ...
                 obj.SPI_MODE, obj.RpiSpiSpeedHz);
@@ -205,6 +227,7 @@ classdef EpsonDeviceRpi < handle
             x4 = obj.readReg(obj.PROD_ID4);
             retval = [x1(2) x1(1) x2(2) x2(1) x3(2) x3(1) x4(2) x4(1)];
             fprintf('Model: %s\n', native2unicode(retval, 'US-ASCII'));
+            obj.ProdId = native2unicode(retval, 'US-ASCII');
         end
 
         function retval = getVersion(obj)
@@ -212,6 +235,7 @@ classdef EpsonDeviceRpi < handle
             x1 = obj.readReg(obj.VERSION);
             retval = x1;
             fprintf('Version: %s.%s\n', string(retval));
+            obj.Version = compose("%d.%d", retval);
         end
 
         function retval = getSerialId(obj)
@@ -222,6 +246,7 @@ classdef EpsonDeviceRpi < handle
             x4 = obj.readReg(obj.SER_NUM4);
             retval = [x1(2) x1(1) x2(2) x2(1) x3(2) x3(1) x4(2) x4(1)];
             fprintf('Serial#: %s\n', native2unicode(retval, 'US-ASCII'));
+            obj.SerialId = native2unicode(retval, 'US-ASCII');
         end
 
         function gotoSampling(obj)
@@ -233,6 +258,7 @@ classdef EpsonDeviceRpi < handle
         function gotoConfig(obj)
         % Go to CONFIG mode
             obj.writeRegH(obj.MODE_CTRL, 2);
+            pause(obj.GOTO_CONFIG_DELAY);
             obj.Sampling = 0;
         end
     end

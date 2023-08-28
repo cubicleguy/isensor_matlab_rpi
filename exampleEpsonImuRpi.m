@@ -1,11 +1,27 @@
-% Disclaimer:
-% --------------
-% THE SOFTWARE IS RELEASED INTO THE PUBLIC DOMAIN.
-% THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
-% INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, NONINFRINGEMENT,
-% SECURITY, SATISFACTORY QUALITY, AND FITNESS FOR A PARTICULAR PURPOSE.
-% IN NO EVENT SHALL EPSON BE LIABLE FOR ANY LOSS, DAMAGE OR CLAIM, ARISING FROM OR
-% IN CONNECTION WITH THE SOFTWARE OR THE USE OF THE SOFTWARE.
+% This is free and unencumbered software released into the public domain.
+
+% Anyone is free to copy, modify, publish, use, compile, sell, or
+% distribute this software, either in source code form or as a compiled
+% binary, for any purpose, commercial or non-commercial, and by any
+% means.
+
+% In jurisdictions that recognize copyright laws, the author or authors
+% of this software dedicate any and all copyright interest in the
+% software to the public domain. We make this dedication for the benefit
+% of the public at large and to the detriment of our heirs and
+% successors. We intend this dedication to be an overt act of
+% relinquishment in perpetuity of all present and future rights to this
+% software under copyright law.
+
+% THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+% EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+% MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+% IN NO EVENT SHALL THE AUTHORS BE LIABLE FOR ANY CLAIM, DAMAGES OR
+% OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
+% ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+% OTHER DEALINGS IN THE SOFTWARE.
+
+% For more information, please refer to <https://unlicense.org>
 
 % This is example of creating an Epson IMU RPI object, configuring the device, 
 % capturing sensor data, printing the scaled sensor data to console,
@@ -39,19 +55,20 @@ NUM_OF_SAMPLES = 1000;
 
 % Latest models
 %%%%%%%%%%%%%%%%
-%e = G330_G366Imu();  % For G330PDG0 or G366PDG0 (speed=1000000, reset=22, drdy=24, is16G=0)
-%e = G330_G366Imu(1000000, 22, 24, 1);  % For G330PDG0 or G366PDG0 with 16G accel output range (speed=1000000, reset=22, drdy=24, is16G=1)
-e = G370Imu();  % For G370PDF1 (speed=1000000, reset=22, drdy=24)
-%e = G370Imu(1000000, 22, 24, 1);  % For G370PDS0 (speed=1000000, reset=22, drdy=24, isPDS0=1)
+e = G330_G366Imu();  % For G330PDG0 or G366PDG0 (speed=1000000, reset=22, drdy=24)
+%e = G365Imu;  % For G365PDF1 (speed=1000000, reset=22, drdy=24)
+%e = G365Imu(1000000, 22, 24, 1);  % For G365PDC1 (speed=1000000, reset=22, drdy=24, IsPDC1=1)
+%e = G370F_G370SImu();  % For G370PDF1 (speed=1000000, reset=22, drdy=24)
+%e = G370F_G370SImu(1000000, 22, 24, 1);  % For G370PDS0 (speed=1000000, reset=22, drdy=24, isPDS0=1)
+%e = G370G_G370TImu();  % For G370PDG0 (speed=1000000, reset=22, drdy=24)
+%e = G370G_G370TImu(1000000, 22, 24, 1);  % For G370PDT0 (speed=1000000, reset=22, drdy=24 IsPDT0=1)
 
 % Legacy models
 %%%%%%%%%%%%%%%
 %e = G320Imu();  % For G320 (speed=1000000, reset=22, drdy=24)
 %e = G354Imu();  % For G354 (speed=1000000, reset=22, drdy=24)
-%e = G364Imu();  % For G364PDC0 (speed=1000000, reset=22, drdy=24, isPDCA=0)
-%e = G364Imu(1000000, 22, 24, 1);  % For G364PDCA (speed=1000000, reset=22, drdy=24, isPDCA=1)
-%e = G365Imu;  % For G365PDF1 (speed=1000000, reset=22, drdy=24, isPDC1=0)
-%e = G365Imu(1000000, 22, 24, 1);  % For G365PDC1 (speed=1000000, reset=22, drdy=24, isPDC1=1)
+%e = G364Imu();  % For G364PDC0 (speed=1000000, reset=22, drdy=24)
+%e = G364Imu(1000000, 22, 24, 1);  % For G364PDCA (speed=1000000, reset=22, drdy=24, IsPDCA=1)
 
 % Configure the Epson IMU settings by modifying properties
 % as needed
@@ -68,9 +85,12 @@ e.Chksm16 = 1;  % Enable CHKSM16 in the burst
 e.DoutRate = 125; % Set output rate at 125Hz
 e.FilterSel = 'tap32'; % Set filter moving average tap=32
 
-% Properties only supported by G365Imu
-%e.Atti = 2;  % Enable Attitude ANG123 32-bit in the burst
-%e.Quaternion = 2;  % Enable QTN0123 32-bit the burst
+% Properties only supported by G365, G330, G366
+%e.Atti = 1;  % Enable Euler ANG123 16-bit in the burst
+%e.Quaternion = 1;  % Enable QTN0123 16-bit in the burst
+
+% Properties only supported by G330, G366, G370PDG0, G370PDT0
+%e.Set16G = 1;  % Enable 16G range on accelerometers (A_RANGE)
 
 % Initialize Epson IMU registers with properties
 e.setDeviceCfg();
